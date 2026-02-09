@@ -7,7 +7,13 @@ import { User, Clock, MapPin } from "lucide-react";
 export function TimelineView() {
     const { history, selectEra } = useSimulationStore();
 
-    if (history.length === 0) return null;
+    if (history.length === 0) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-black">
+                <div className="text-white animate-pulse tracking-widest uppercase text-sm">Synchronizing Timeline...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full max-w-4xl mx-auto p-8 relative">

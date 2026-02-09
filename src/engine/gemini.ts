@@ -5,7 +5,7 @@ const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.0-flash",
     generationConfig: { responseMimeType: "application/json" }
 });
 
@@ -43,8 +43,9 @@ export async function generateHistory(prompt: string) {
         text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
         return JSON.parse(text);
-    } catch (e) {
-        console.error("Gemini API Error:", e);
-        throw e;
+    } catch (e: any) {
+        console.error("Gemini API Error details:", e);
+        const errorMessage = e.message || "An unknown error occurred with Gemini";
+        throw new Error(errorMessage);
     }
 }

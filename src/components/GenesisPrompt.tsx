@@ -17,22 +17,23 @@ export function GenesisPrompt() {
 
         setIsLoading(true);
         setPrompt(input);
-        startSimulation();
 
         try {
             // Generate the initial history (5 eras)
             const history = await generateHistory(input);
 
+            // Switch to Timeline View ONLY after data is ready
+            startSimulation();
+
             // Add eras one by one with a slight delay for effect
             for (const era of history) {
-                await new Promise(r => setTimeout(r, 800)); // Cinematic delay
+                await new Promise(r => setTimeout(r, 600)); // Smooth delay
                 addEra(era);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Simulation failed:", error);
-            alert("The simulation collapsed before it began. Try again.");
-        } finally {
-            setIsLoading(false);
+            alert(`The simulation collapsed: ${error.message || "Unknown error"}. Please check your API key.`);
+            setIsLoading(false); // Reset loading state on error
         }
     };
 
