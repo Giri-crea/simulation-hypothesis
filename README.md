@@ -31,6 +31,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This Next.js app is ready to deploy on Vercel.
+
+1. Push this repository to GitHub.
+2. Create a new Vercel project and connect it to `Giri-crea/simulation-hypothesis`.
+3. In the Vercel dashboard, add the required environment variable:
+
+   - `NEXT_PUBLIC_GEMINI_API_KEY` – your Gemini API key
+   - `NEXT_PUBLIC_GEMINI_MODEL` – optional, defaults to `gemini-3-flash-preview`
+
+4. Deploy the project.
+
+> Do not commit your API key into the repository. The `.env*` files are ignored by git.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
