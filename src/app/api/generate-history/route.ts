@@ -1,19 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-3-flash-preview";
-
-if (!API_KEY) {
-  throw new Error("Missing Gemini API Key. Set GEMINI_API_KEY in your environment.");
-}
-
-const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({
-  model: MODEL_NAME,
-  generationConfig: { responseMimeType: "application/json" },
-});
-
 const systemPrompt = `
 You are The Simulator. You are generating a fictional history of a civilization based on the user's input.
 Your output must be a valid JSON array of 5 "Era" objects.
@@ -29,7 +16,13 @@ The history should flow logically from one era to the next.
 Ensure strict JSON format without markdown code blocks.
 `;
 
-async function generateHistory(prompt: string) {
+async function generateHistory(prompt: string, apiKey: string, modelName: string) {
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    generationConfig: { responseMimeType: "application/json" },
+  });
+
   const result = await model.generateContent([systemPrompt, `User Prompt: ${prompt}`]);
   const response = result.response;
   let text = response.text();
@@ -37,21 +30,37 @@ async function generateHistory(prompt: string) {
   return JSON.parse(text);
 }
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Failed to generate history";
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const prompt = body.prompt;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const modelName =
+      process.env.GEMINI_MODEL ||
+      process.env.NEXT_PUBLIC_GEMINI_MODEL ||
+      "gemini-3-flash-preview";
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
-    const history = await generateHistory(prompt);
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "Missing Gemini API key. Set GEMINI_API_KEY in Vercel." },
+        { status: 500 }
+      );
+    }
+
+    const history = await generateHistory(prompt, apiKey, modelName);
     return NextResponse.json({ history });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("API Error generating history:", error);
     return NextResponse.json(
-      { error: error?.message || "Failed to generate history" },
+      { error: getErrorMessage(error) },
       { status: 500 }
     );
   }

@@ -2,10 +2,10 @@
 
 import { motion } from "framer-motion";
 import { useSimulationStore, Era } from "@/engine/simulationStore";
-import { User, Clock, MapPin } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
 
 export function TimelineView() {
-    const { history, selectEra } = useSimulationStore();
+    const { history } = useSimulationStore();
 
     if (history.length === 0) {
         return (

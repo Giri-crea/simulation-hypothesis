@@ -39,9 +39,10 @@ export function GenesisPrompt() {
                 await new Promise((resolve) => setTimeout(resolve, 600));
                 addEra(era);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Simulation failed:", error);
-            alert(`The simulation collapsed: ${error.message || "Unknown error"}. Please check your API key.`);
+            const message = error instanceof Error ? error.message : "Unknown error";
+            alert(`The simulation collapsed: ${message}. Please check your API key.`);
             setIsLoading(false);
         }
     };

@@ -48,9 +48,9 @@ export async function generateHistory(prompt: string) {
         text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
         return JSON.parse(text);
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("Gemini API Error details:", e);
-        const errorMessage = e.message || "An unknown error occurred with Gemini";
+        const errorMessage = e instanceof Error ? e.message : "An unknown error occurred with Gemini";
         throw new Error(errorMessage);
     }
 }
