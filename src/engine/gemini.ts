@@ -1,11 +1,16 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+const MODEL_NAME = process.env.NEXT_PUBLIC_GEMINI_MODEL || "gemini-3-flash-preview";
+
+if (!API_KEY) {
+    throw new Error("Missing Gemini API Key. Set NEXT_PUBLIC_GEMINI_API_KEY in .env.local.");
+}
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: MODEL_NAME,
     generationConfig: { responseMimeType: "application/json" }
 });
 
