@@ -37,8 +37,15 @@ This Next.js app is ready to deploy on Vercel.
 2. Create a new Vercel project and connect it to `Giri-crea/simulation-hypothesis`.
 3. In the Vercel dashboard, add the required environment variable:
 
-   - `NEXT_PUBLIC_GEMINI_API_KEY` – your Gemini API key
-   - `NEXT_PUBLIC_GEMINI_MODEL` – optional, defaults to `gemini-3-flash-preview`
+   - `GEMINI_API_KEY` – your Gemini API key
+   - `GEMINI_MODEL` – optional, defaults to `gemini-3-flash-preview`
+
+   For local development, create a `.env.local` file with the same values:
+
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key_here
+   GEMINI_MODEL=gemini-3-flash-preview
+   ```
 
 4. Deploy the project.
 

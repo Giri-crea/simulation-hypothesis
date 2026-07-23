@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useSimulationStore } from "@/engine/simulationStore";
-import { generateHistory } from "@/engine/gemini";
 
 export function GenesisPrompt() {
     const [input, setInput] = useState("");
@@ -19,21 +18,31 @@ export function GenesisPrompt() {
         setPrompt(input);
 
         try {
-            // Generate the initial history (5 eras)
-            const history = await generateHistory(input);
+            const response = await fetch("/api/generate-history", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ prompt: input }),
+            });
 
-            // Switch to Timeline View ONLY after data is ready
+            const data = await response.json();
+
+            if (!response.ok || data.error) {
+                throw new Error(data.error || "Failed to generate history");
+            }
+
+            const history = data.history;
             startSimulation();
 
-            // Add eras one by one with a slight delay for effect
             for (const era of history) {
-                await new Promise(r => setTimeout(r, 600)); // Smooth delay
+                await new Promise((resolve) => setTimeout(resolve, 600));
                 addEra(era);
             }
         } catch (error: any) {
             console.error("Simulation failed:", error);
             alert(`The simulation collapsed: ${error.message || "Unknown error"}. Please check your API key.`);
-            setIsLoading(false); // Reset loading state on error
+            setIsLoading(false);
         }
     };
 
