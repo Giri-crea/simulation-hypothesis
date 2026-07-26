@@ -5,16 +5,26 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useSimulationStore } from "@/engine/simulationStore";
 
+const promptPresets = [
+    "A civilization inside a planet-sized clockwork archive",
+    "Ocean nomads who discover mathematics in whale songs",
+    "A desert empire ruled by predictive dreams",
+    "Post-human botanists rebuilding Earth from orbit",
+];
+
 export function GenesisPrompt() {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const { setPrompt, startSimulation, addEra } = useSimulationStore();
+    const [notice, setNotice] = useState("");
+    const { setPrompt, setGenerationNotice, startSimulation, addEra } = useSimulationStore();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim()) return;
 
         setIsLoading(true);
+        setNotice("");
+        setGenerationNotice("");
         setPrompt(input);
 
         try {
@@ -33,6 +43,7 @@ export function GenesisPrompt() {
             }
 
             const history = data.history;
+            setGenerationNotice(data.warning || "");
             startSimulation();
 
             for (const era of history) {
@@ -42,7 +53,7 @@ export function GenesisPrompt() {
         } catch (error: unknown) {
             console.error("Simulation failed:", error);
             const message = error instanceof Error ? error.message : "Unknown error";
-            alert(`The simulation collapsed: ${message}. Please check your API key.`);
+            setNotice(`The simulation collapsed: ${message}. Please check your API key.`);
             setIsLoading(false);
         }
     };
@@ -96,6 +107,24 @@ export function GenesisPrompt() {
                             </button>
                         </motion.div>
 
+                        <motion.div
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5 }}
+                            className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2"
+                        >
+                            {promptPresets.map((preset) => (
+                                <button
+                                    key={preset}
+                                    type="button"
+                                    onClick={() => setInput(preset)}
+                                    className="rounded border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-gray-300 transition hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-white"
+                                >
+                                    {preset}
+                                </button>
+                            ))}
+                        </motion.div>
+
                         <motion.p
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -104,6 +133,16 @@ export function GenesisPrompt() {
                         >
                             Powered by Gemini 3.0
                         </motion.p>
+
+                        {notice && (
+                            <motion.p
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="mx-auto mt-4 max-w-xl rounded border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100"
+                            >
+                                {notice}
+                            </motion.p>
+                        )}
                     </motion.form>
                 ) : (
                     <motion.div

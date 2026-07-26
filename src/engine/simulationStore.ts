@@ -24,11 +24,13 @@ export interface Era {
 export interface SimulationState {
     isSimulating: boolean;
     currentPrompt: string; // "The Genesis Prompt"
+    generationNotice: string;
     history: Era[];
     selectedEraIndex: number | null;
 
     // Actions
     setPrompt: (prompt: string) => void;
+    setGenerationNotice: (notice: string) => void;
     startSimulation: () => void;
     addEra: (era: Era) => void;
     selectEra: (index: number | null) => void;
@@ -38,12 +40,14 @@ export interface SimulationState {
 export const useSimulationStore = create<SimulationState>((set) => ({
     isSimulating: false,
     currentPrompt: '',
+    generationNotice: '',
     history: [],
     selectedEraIndex: null,
 
     setPrompt: (prompt) => set({ currentPrompt: prompt }),
+    setGenerationNotice: (notice) => set({ generationNotice: notice }),
     startSimulation: () => set({ isSimulating: true, history: [], selectedEraIndex: null }),
     addEra: (era) => set((state) => ({ history: [...state.history, era] })),
     selectEra: (index) => set({ selectedEraIndex: index }),
-    reset: () => set({ isSimulating: false, currentPrompt: '', history: [], selectedEraIndex: null }),
+    reset: () => set({ isSimulating: false, currentPrompt: '', generationNotice: '', history: [], selectedEraIndex: null }),
 }));
