@@ -32,7 +32,7 @@ type GenerationRequest = {
 };
 
 const systemPrompt = `
-You are The Simulator. You are generating a fictional history of a civilization based on the user's input.
+You are The Simulator. You generate a coherent fictional or alternate-history timeline based on the user's input. The input may be a civilization, place, technology, event, person, or era.
 Your output must be a valid JSON array of 5 "Era" objects.
 Each Era object must have:
 - name: string (Creative name for the historical era or phase)
@@ -56,6 +56,8 @@ Topic: ${prompt}
 Mode: Generate the complete civilization timeline.
 Requirements:
 - Make all five eras directly about the topic.
+- If the topic is an event, generate eras about the aftermath and consequences of that event.
+- If the topic names a real person or event, keep the timeline historically plausible unless the user asks for fantasy or sci-fi.
 - Each era should add a new topic-specific development, not generic history filler.
 `;
   }
@@ -98,106 +100,115 @@ function slugify(value: string) {
     .slice(0, 48);
 }
 
-function eraLabel(mode: GenerationMode, anchorEra?: string, includePast?: boolean) {
-  if (mode === "full") return "origin";
-  if (includePast) return `${anchorEra} and its past`;
-  return anchorEra || "chosen era";
+function cleanTopic(value: string) {
+  return value
+    .trim()
+    .replace(/^the\s+/i, "")
+    .replace(/\s+/g, " ");
+}
+
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function eventLabel(topic: string) {
+  return topic.replace(/^after\s+/i, "the aftermath of ");
 }
 
 function generateFallbackHistory({ prompt, anchorEra, anchorCycle, includePast }: GenerationRequest): Era[] {
-  const seed = prompt.trim() || "an unnamed simulation";
-  const subject = seed.charAt(0).toUpperCase() + seed.slice(1);
+  const seed = cleanTopic(prompt) || "an unnamed turning point";
+  const topic = eventLabel(seed);
+  const titleTopic = capitalize(topic);
   const mode: GenerationMode = anchorEra?.trim() ? "from-era" : "full";
-  const eraFocus = anchorEra?.trim() || "the first age";
+  const eraFocus = cleanTopic(anchorEra || "") || "the opening phase";
   const cycleFocus = anchorCycle?.trim();
   const idBase = slugify(`${seed}-${eraFocus}`) || "simulation";
-  const originName = mode === "from-era" && !includePast ? eraFocus : "The First Parameters";
-  const focusLabel = eraLabel(mode, eraFocus, includePast);
   const firstCycle = mode === "from-era" && !includePast && cycleFocus ? cycleFocus : "Cycle 0-140";
   const anchoredCycle = includePast && cycleFocus ? cycleFocus : "Cycle 141-420";
+  const openingName = mode === "from-era" && !includePast ? capitalize(eraFocus) : "The Opening Shock";
+  const secondName = includePast ? capitalize(eraFocus) : "The Settlement of Power";
 
   return [
     {
-      id: `${idBase}-origin`,
-      name: originName,
+      id: `${idBase}-opening`,
+      name: openingName,
       yearRange: firstCycle,
       theme: mode === "from-era" && !includePast ? "classical" : "primitive",
-      description: `${subject} begins around ${focusLabel}, where daily survival, belief, and power are shaped by the topic's own rules. Every discovery is tied to the people, places, and conflicts implied by "${seed}".`,
+      description: `The timeline begins with ${topic}, focusing on the immediate instability, leadership choices, and social pressure created by the topic. Instead of treating the prompt as a civilization name, this era frames it as the cause of a changing historical situation.`,
       events: [
-        { year: "Cycle 3", description: `The first communities define what ${seed} means for food, shelter, work, and authority.` },
-        { year: "Cycle 47", description: `A generation of observers records the earliest rules and dangers of ${eraFocus}.` },
-        { year: "Cycle 119", description: `Local traditions merge into a shared explanation of why ${seed} matters.` },
+        { year: "Cycle 3", description: `News and interpretations of ${topic} spread through the first affected communities.` },
+        { year: "Cycle 47", description: `Rival groups compete to define what ${topic} means for authority, territory, and survival.` },
+        { year: "Cycle 119", description: `Early institutions form around the practical problems created by ${topic}.` },
       ],
       artifacts: [
-        { name: "Topic Ledger", description: `A record of names, materials, laws, and warnings specific to ${seed}.`, imageUrl: "" },
-        { name: "Era Marker", description: `A ceremonial object associated with ${eraFocus}.`, imageUrl: "" },
+        { name: "Succession Record", description: `A compact record of claims, alliances, and disputes that followed ${topic}.`, imageUrl: "" },
+        { name: "Boundary Map", description: `A map showing how power and movement changed after ${topic}.`, imageUrl: "" },
       ],
     },
     {
-      id: `${idBase}-accord`,
-      name: includePast ? eraFocus : "The Era of Expansion",
+      id: `${idBase}-settlement`,
+      name: secondName,
       yearRange: anchoredCycle,
       theme: "classical",
-      description: `Institutions form around ${seed}, turning the details of ${eraFocus} into law, art, and public experiment. The civilization becomes recognizable because its politics and culture keep orbiting the same topic-specific question.`,
+      description: `A more stable order emerges as leaders, families, cities, or factions adapt to ${topic}. This era is about consolidation: who gains legitimacy, who loses influence, and which rules survive the first crisis.`,
       events: [
-        { year: "Cycle 188", description: `A public forum debates who controls the knowledge behind ${seed}.` },
-        { year: "Cycle 266", description: `Builders create the first civic spaces designed around ${eraFocus}.` },
-        { year: "Cycle 399", description: `A succession crisis is settled by rules drawn from the culture's relationship to ${seed}.` },
+        { year: "Cycle 188", description: `A council or ruling circle turns the first emergency around ${topic} into formal policy.` },
+        { year: "Cycle 266", description: `Trade, military planning, and civic life reorganize around the new balance of power.` },
+        { year: "Cycle 399", description: `A major dispute is settled by precedent rather than force, giving the new era its shape.` },
       ],
       artifacts: [
-        { name: "Accord Tablets", description: `Legal records describing rights, duties, and taboos around ${seed}.`, imageUrl: "" },
+        { name: "Accord Tablets", description: `Legal records describing the agreements that stabilized society after ${topic}.`, imageUrl: "" },
       ],
     },
     {
-      id: `${idBase}-engine`,
-      name: "The Engine Century",
+      id: `${idBase}-expansion`,
+      name: "The Expansion of Systems",
       yearRange: "Cycle 421-760",
       theme: "industrial",
-      description: `Energy, industry, and measurement reshape how ${subject} uses ${eraFocus}. The people stop treating the topic as background and start building machines, markets, and rival systems around it.`,
+      description: `${titleTopic} becomes the foundation for larger systems of administration, economy, memory, and defense. The society no longer only reacts to the event; it builds durable structures from its consequences.`,
       events: [
-        { year: "Cycle 455", description: `Workshops standardize tools for measuring, producing, or preserving ${seed}.` },
-        { year: "Cycle 608", description: `A labor movement demands public access to the benefits created by ${eraFocus}.` },
-        { year: "Cycle 731", description: `A continental network links the communities most dependent on ${seed}.` },
+        { year: "Cycle 455", description: `Officials standardize records, routes, and obligations created by ${topic}.` },
+        { year: "Cycle 608", description: `A reform movement challenges who benefits from the post-event order.` },
+        { year: "Cycle 731", description: `A wider network links regions most affected by the consequences of ${topic}.` },
       ],
       artifacts: [
-        { name: "Variance Engine", description: `An analytical machine built to forecast changes in ${seed}.`, imageUrl: "" },
-        { name: "Signal Rail Map", description: `A transport chart connecting the major sites of ${eraFocus}.`, imageUrl: "" },
+        { name: "Administrative Grid", description: `A planning system used to manage resources and loyalties after ${topic}.`, imageUrl: "" },
+        { name: "Route Ledger", description: `A transport and tribute record connecting the major post-event centers.`, imageUrl: "" },
       ],
     },
     {
-      id: `${idBase}-mirror`,
-      name: "The Mirror Protocols",
+      id: `${idBase}-fracture`,
+      name: "The Fracture Debates",
       yearRange: "Cycle 761-1040",
-      theme: "cyberpunk",
-      description: `Networks become intimate, predictive, and politically dangerous because they encode the civilization's dependence on ${seed}. Underground groups search for ways to bend ${eraFocus} toward their own futures.`,
+      theme: "modern",
+      description: `Later generations reinterpret ${topic}, turning it into a political argument about identity, justice, and inheritance. The past becomes contested because different groups need different versions of it.`,
       events: [
-        { year: "Cycle 803", description: `Personal assistants model how ${seed} affects elections, work, and identity.` },
-        { year: "Cycle 912", description: `A leaked archive reveals forbidden versions of ${eraFocus}.` },
-        { year: "Cycle 1001", description: `Cities adopt public audits after misinformation spreads through ${seed}-based systems.` },
+        { year: "Cycle 803", description: `Schools and archives begin teaching competing explanations of ${topic}.` },
+        { year: "Cycle 912", description: `A hidden record challenges the official story and reopens old claims.` },
+        { year: "Cycle 1001", description: `Cities adopt public audits to settle disputed memories and property rights.` },
       ],
       artifacts: [
-        { name: "Black Mirror Key", description: `An encrypted access shard linked to restricted knowledge of ${seed}.`, imageUrl: "" },
-        { name: "Memory Warrant", description: `A legal instrument used to challenge altered records of ${eraFocus}.`, imageUrl: "" },
+        { name: "Contradictory Chronicle", description: `A disputed text preserving an alternative account of ${topic}.`, imageUrl: "" },
+        { name: "Memory Warrant", description: `A legal instrument used to challenge inherited claims from the earlier eras.`, imageUrl: "" },
       ],
     },
     {
-      id: `${idBase}-horizon`,
-      name: "The Horizon Settlement",
+      id: `${idBase}-legacy`,
+      name: "The Legacy Settlement",
       yearRange: "Cycle 1041-1320",
       theme: "utopian",
-      description: `After centuries of conflict, the civilization turns ${seed} into a shared civic resource instead of a private weapon. Its final achievement is learning how ${eraFocus} can support many futures without erasing its origin.`,
+      description: `The society finally treats ${topic} as shared history rather than a weapon. Its long-term achievement is not forgetting the rupture, but building a future that can admit what changed and why.`,
       events: [
-        { year: "Cycle 1088", description: `Rival factions sign a pact governing the public use of ${seed}.` },
-        { year: "Cycle 1196", description: `Schools teach citizens how ${eraFocus} shaped their present choices.` },
-        { year: "Cycle 1319", description: `The civilization sends its first message beyond its borders, describing itself through ${seed}.` },
+        { year: "Cycle 1088", description: `Rival factions sign a pact governing how the history of ${topic} can be used in public life.` },
+        { year: "Cycle 1196", description: `Schools teach the event as a chain of causes rather than a single myth.` },
+        { year: "Cycle 1319", description: `A final charter defines rights and responsibilities for communities shaped by the event.` },
       ],
       artifacts: [
-        { name: "Horizon Charter", description: `A compact defining stewardship, memory, and identity around ${seed}.`, imageUrl: "" },
+        { name: "Legacy Charter", description: `A compact defining stewardship, memory, and identity after ${topic}.`, imageUrl: "" },
       ],
     },
   ];
 }
-
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Failed to generate history";
 }
@@ -245,6 +256,7 @@ export async function POST(request: Request) {
     );
   }
 }
+
 
 
 
