@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, History, Sparkles } from "lucide-react";
 import { useSimulationStore } from "@/engine/simulationStore";
 
 const promptPresets = [
@@ -14,6 +14,8 @@ const promptPresets = [
 
 export function GenesisPrompt() {
     const [input, setInput] = useState("");
+    const [anchorEra, setAnchorEra] = useState("");
+    const [includePast, setIncludePast] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [notice, setNotice] = useState("");
     const { setPrompt, setGenerationNotice, startSimulation, addEra } = useSimulationStore();
@@ -25,7 +27,7 @@ export function GenesisPrompt() {
         setIsLoading(true);
         setNotice("");
         setGenerationNotice("");
-        setPrompt(input);
+        setPrompt(anchorEra.trim() ? `${input} from ${anchorEra}` : input);
 
         try {
             const response = await fetch("/api/generate-history", {
@@ -33,7 +35,11 @@ export function GenesisPrompt() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ prompt: input }),
+                body: JSON.stringify({
+                    prompt: input,
+                    anchorEra,
+                    includePast: anchorEra.trim() ? includePast : false,
+                }),
             });
 
             const data = await response.json();
@@ -108,6 +114,44 @@ export function GenesisPrompt() {
                         </motion.div>
 
                         <motion.div
+                            initial={{ opacity: 0, y: 18 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.45 }}
+                            className="mt-4 rounded-lg border border-white/10 bg-white/[0.04] p-4 text-left backdrop-blur"
+                        >
+                            <label htmlFor="anchor-era" className="mb-2 block text-xs uppercase tracking-widest text-cyan-300">
+                                Start from a specific era
+                            </label>
+                            <input
+                                type="text"
+                                id="anchor-era"
+                                name="anchor-era"
+                                autoComplete="off"
+                                value={anchorEra}
+                                onChange={(e) => setAnchorEra(e.target.value)}
+                                placeholder="Example: Bronze Age, first AI dynasty, post-collapse era"
+                                className="w-full rounded border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-gray-600 outline-none transition focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-300/10"
+                            />
+
+                            {anchorEra.trim() && (
+                                <div className="mt-3 flex items-center justify-between gap-4 rounded border border-white/10 bg-black/20 px-4 py-3">
+                                    <div>
+                                        <p className="text-sm font-medium text-white">Generate the past too?</p>
+                                        <p className="text-xs text-gray-500">If enabled, earlier eras explain how this era came to exist.</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        aria-pressed={includePast}
+                                        onClick={() => setIncludePast((value) => !value)}
+                                        className={`flex h-9 w-16 items-center rounded-full border p-1 transition ${includePast ? "border-cyan-300/50 bg-cyan-300/20" : "border-white/10 bg-white/5"}`}
+                                    >
+                                        <span className={`h-7 w-7 rounded-full bg-white transition ${includePast ? "translate-x-7" : "translate-x-0"}`} />
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+
+                        <motion.div
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
@@ -117,7 +161,11 @@ export function GenesisPrompt() {
                                 <button
                                     key={preset}
                                     type="button"
-                                    onClick={() => setInput(preset)}
+                                    onClick={() => {
+                                        setInput(preset);
+                                        setAnchorEra("");
+                                        setIncludePast(false);
+                                    }}
                                     className="rounded border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-gray-300 transition hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-white"
                                 >
                                     {preset}
@@ -131,7 +179,8 @@ export function GenesisPrompt() {
                             transition={{ delay: 0.6 }}
                             className="mt-6 text-gray-500 text-sm tracking-widest uppercase"
                         >
-                            Powered by Gemini 3.0
+                            <History className="mr-2 inline h-4 w-4 align-[-2px]" />
+                            Topic-aware eras powered by Gemini 3.0
                         </motion.p>
 
                         {notice && (
