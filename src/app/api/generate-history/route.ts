@@ -27,6 +27,7 @@ type GenerationMode = "full" | "from-era";
 type GenerationRequest = {
   prompt: string;
   anchorEra?: string;
+  anchorCycle?: string;
   includePast?: boolean;
 };
 
@@ -34,8 +35,8 @@ const systemPrompt = `
 You are The Simulator. You are generating a fictional history of a civilization based on the user's input.
 Your output must be a valid JSON array of 5 "Era" objects.
 Each Era object must have:
-- name: string (Creative name for the era)
-- yearRange: string (e.g., "1000-1200 AD", "Year 0-500", "Stardate 4000")
+- name: string (Creative name for the historical era or phase)
+- yearRange: string (chronological cycle or time range only, e.g., "Cycle 40-120", "1000-1200 AD", "Stardate 4000")
 - description: string (2-3 sentences max)
 - events: array of objects { year: string, description: string } (3-5 key events)
 - theme: one of "primitive", "classical", "industrial", "modern", "cyberpunk", "utopian", "dystopian"
@@ -43,11 +44,12 @@ Each Era object must have:
 
 Every era, event, and artifact must be clearly related to the user's topic. Do not drift into generic simulation lore unless the user's topic asks for it.
 Era names, descriptions, events, and artifacts should reuse concrete nouns, environments, conflicts, materials, technologies, cultures, and constraints from the topic.
+Do not confuse era and cycle: the era is the named period of culture/history, while the cycle is the time range when it happens.
 The history should flow logically from one era to the next.
 Ensure strict JSON format without markdown code blocks.
 `;
 
-function buildUserPrompt({ prompt, anchorEra, includePast }: GenerationRequest) {
+function buildUserPrompt({ prompt, anchorEra, anchorCycle, includePast }: GenerationRequest) {
   if (!anchorEra?.trim()) {
     return `
 Topic: ${prompt}
@@ -61,11 +63,14 @@ Requirements:
   return `
 Topic: ${prompt}
 Specific era to generate from: ${anchorEra}
+Specific cycle/time range for that era: ${anchorCycle?.trim() || "not specified"}
 Mode: Start the timeline from the specified era.
 Include past before that era: ${includePast ? "yes" : "no"}
 Requirements:
 - The specified era must appear as the first era when include past is no.
 - The specified era must appear around the middle when include past is yes, with earlier eras explaining how it came to exist.
+- If a specific cycle/time range is provided, use it as yearRange for the specified era only.
+- Keep era name and cycle/time range separate.
 - Later eras must grow from the specified era's people, technology, conflicts, places, or beliefs.
 - Keep every era tightly connected to both the topic and the specified era.
 `;
@@ -99,20 +104,23 @@ function eraLabel(mode: GenerationMode, anchorEra?: string, includePast?: boolea
   return anchorEra || "chosen era";
 }
 
-function generateFallbackHistory({ prompt, anchorEra, includePast }: GenerationRequest): Era[] {
+function generateFallbackHistory({ prompt, anchorEra, anchorCycle, includePast }: GenerationRequest): Era[] {
   const seed = prompt.trim() || "an unnamed simulation";
   const subject = seed.charAt(0).toUpperCase() + seed.slice(1);
   const mode: GenerationMode = anchorEra?.trim() ? "from-era" : "full";
   const eraFocus = anchorEra?.trim() || "the first age";
+  const cycleFocus = anchorCycle?.trim();
   const idBase = slugify(`${seed}-${eraFocus}`) || "simulation";
   const originName = mode === "from-era" && !includePast ? eraFocus : "The First Parameters";
   const focusLabel = eraLabel(mode, eraFocus, includePast);
+  const firstCycle = mode === "from-era" && !includePast && cycleFocus ? cycleFocus : "Cycle 0-140";
+  const anchoredCycle = includePast && cycleFocus ? cycleFocus : "Cycle 141-420";
 
   return [
     {
       id: `${idBase}-origin`,
       name: originName,
-      yearRange: "Cycle 0-140",
+      yearRange: firstCycle,
       theme: mode === "from-era" && !includePast ? "classical" : "primitive",
       description: `${subject} begins around ${focusLabel}, where daily survival, belief, and power are shaped by the topic's own rules. Every discovery is tied to the people, places, and conflicts implied by "${seed}".`,
       events: [
@@ -128,7 +136,7 @@ function generateFallbackHistory({ prompt, anchorEra, includePast }: GenerationR
     {
       id: `${idBase}-accord`,
       name: includePast ? eraFocus : "The Era of Expansion",
-      yearRange: "Cycle 141-420",
+      yearRange: anchoredCycle,
       theme: "classical",
       description: `Institutions form around ${seed}, turning the details of ${eraFocus} into law, art, and public experiment. The civilization becomes recognizable because its politics and culture keep orbiting the same topic-specific question.`,
       events: [
@@ -199,8 +207,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const prompt = body.prompt;
     const anchorEra = typeof body.anchorEra === "string" ? body.anchorEra : "";
+    const anchorCycle = typeof body.anchorCycle === "string" ? body.anchorCycle : "";
     const includePast = Boolean(body.includePast);
-    const generationRequest = { prompt, anchorEra, includePast };
+    const generationRequest = { prompt, anchorEra, anchorCycle, includePast };
     const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     const modelName =
       process.env.GEMINI_MODEL ||
@@ -236,3 +245,7 @@ export async function POST(request: Request) {
     );
   }
 }
+
+
+
+

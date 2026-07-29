@@ -15,6 +15,7 @@ const promptPresets = [
 export function GenesisPrompt() {
     const [input, setInput] = useState("");
     const [anchorEra, setAnchorEra] = useState("");
+    const [anchorCycle, setAnchorCycle] = useState("");
     const [includePast, setIncludePast] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [notice, setNotice] = useState("");
@@ -27,7 +28,7 @@ export function GenesisPrompt() {
         setIsLoading(true);
         setNotice("");
         setGenerationNotice("");
-        setPrompt(anchorEra.trim() ? `${input} from ${anchorEra}` : input);
+        setPrompt(anchorEra.trim() ? `${input} from ${anchorEra}${anchorCycle.trim() ? ` (${anchorCycle})` : ""}` : input);
 
         try {
             const response = await fetch("/api/generate-history", {
@@ -38,6 +39,7 @@ export function GenesisPrompt() {
                 body: JSON.stringify({
                     prompt: input,
                     anchorEra,
+                    anchorCycle,
                     includePast: anchorEra.trim() ? includePast : false,
                 }),
             });
@@ -133,6 +135,20 @@ export function GenesisPrompt() {
                                 className="w-full rounded border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-gray-600 outline-none transition focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-300/10"
                             />
 
+                            <label htmlFor="anchor-cycle" className="mb-2 mt-4 block text-xs uppercase tracking-widest text-gray-500">
+                                Cycle or time range for that era
+                            </label>
+                            <input
+                                type="text"
+                                id="anchor-cycle"
+                                name="anchor-cycle"
+                                autoComplete="off"
+                                value={anchorCycle}
+                                onChange={(e) => setAnchorCycle(e.target.value)}
+                                placeholder="Optional: Cycle 400-520, 1200 AD, Stardate 9.8"
+                                className="w-full rounded border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-gray-600 outline-none transition focus:border-cyan-300/50 focus:ring-2 focus:ring-cyan-300/10"
+                            />
+
                             {anchorEra.trim() && (
                                 <div className="mt-3 flex items-center justify-between gap-4 rounded border border-white/10 bg-black/20 px-4 py-3">
                                     <div>
@@ -164,6 +180,7 @@ export function GenesisPrompt() {
                                     onClick={() => {
                                         setInput(preset);
                                         setAnchorEra("");
+                                        setAnchorCycle("");
                                         setIncludePast(false);
                                     }}
                                     className="rounded border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-gray-300 transition hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-white"
@@ -208,3 +225,6 @@ export function GenesisPrompt() {
         </div>
     );
 }
+
+
+
